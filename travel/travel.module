@@ -1,0 +1,320 @@
+<?php
+
+/**
+ * @file
+ * Describe the details about the entity.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function travel_permission() {
+  $permissions = array(
+    'view travel content' => array(
+      'title' => t('View Typical Entity Example content'),
+    ),
+    'administer travel content' => array(
+      'title' => t('Administer Typical Entity Example content'),
+      'restrict access' => TRUE,
+    ),
+  );
+  return $permissions;
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function travel_entity_info() {
+  $info = array(
+    'travel' => array(
+      'label' => t('Travel'),
+      'base table' => 'travel',
+      'entity keys' => array(  //Name of the keys for the entity
+        'id' => 'tid',
+        'label' => 'transport',  //Required for displays output, even if a label callback is defined with default which is entity_class_label
+      ),
+      'controller class' => 'TravelController',  //for providing the UI.
+      'metadata controller class' => '',  //For entity metadata wrappers
+      'uri callback' => 'travel_uri',  //Path property for the entity defining the current path.
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Implements entity_uri()
+ */
+function travel_uri($travel) {
+    return array(
+      'path' => 'travel/' . $travel->tid,
+    );
+}
+
+/**
+ * Load an instance of travel. This hook is invoked during loading, like entity_load(), via classes DrupalDefaultEntityController. The information is read from the database or the entity cache and retured.
+ * 
+ * @param int $tid
+ *   Entity identifier.
+ * @param bool $reset
+ *   Whether to reset the internal cache for travel.
+ * 
+ * @return mixed
+ *   An actual entity, or false.
+ */
+function travel_load($tid, $reset = FALSE) {
+  $entities = travel_load_multiple(array($tid), array(), $reset);
+  return reset($entities);
+}
+
+/**
+ * Load multiple instances of travel.
+ * 
+ * @see entity_load()
+ * 
+ * @param array $tids
+ *   Entity identifiers.
+ * @param array $conditions
+ *   (deprecated) An associative array of conditions on the base entity table.
+ * @param bool $reset
+ *   Whether to reset the internal cache for travel.
+ * 
+ * @return array
+ *   Founded entities.
+ */
+function travel_load_multiple($tids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('travel', $tids, $conditions, $reset);
+}
+
+/**
+ * Implements hook_entity_property_info().
+ */
+function travel_entity_property_info() {
+  $info = array();
+  $properties = &$info['travel']['properties'];
+  $properties['tid'] = array(
+    'type' => 'integer',
+    'schema field' => 'tid',
+    'label' => t('Travel Entity ID'),
+  );
+  $properties['transport'] = array(
+    'type' => 'text',
+    'schema field' => 'transport',
+    'required' => TRUE,
+    'label' => t('Transport:'),
+  );
+  $properties['source_from'] = array(
+    'type' => 'text',
+    'schema field' => 'source_from',
+    'required' => TRUE,
+    'label' => t('Source From:'),
+  );
+  $properties['destination_to'] = array(
+    'type' => 'text',
+    'schema field' => 'destination_to',
+    'required' => TRUE,
+    'label' => t('Destination To:'),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_menu().
+ * 
+ * Describe pages for viewing and managing entities.
+ */
+function travel_menu() {
+  $items = array();
+
+  // Base URI for dealing with entity.
+  $base_uri = 'travel/%travel';
+  $base_uri_argument_position = 1;
+
+  // URI for viewing list of existing entities.
+  $items['travel'] = array(
+    'title' => 'Travels List',
+    'page callback' => 'travel_list',
+    'access arguments' => array('view travel content'),
+    'file' => 'travel.pages.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  // URI for choosing bundle of entity to add.
+  $items['travel/add'] = array(
+    'title' => 'Add Typical Entity 4',
+    'page callback' => 'travel_add',
+    'access arguments' => array('administer travel content'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  // URI for viewing entity instances.
+  $items[$base_uri] = array(
+    'title callback' => 'entity_label',
+    'title arguments' => array('travel', $base_uri_argument_position),
+    'page callback' => 'travel_view',
+    'page arguments' => array($base_uri_argument_position),
+    'access arguments' => array('view travel content'),
+    'file' => 'travel.pages.inc',
+  );
+  $items[$base_uri . '/view'] = array(
+    'title' => 'View Travel Entity',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  // URI for editing entity instances.
+  $items[$base_uri . '/edit'] = array(
+    'title' => 'Edit Typical Entity 4',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('travel_add_form', $base_uri_argument_position),
+    'access arguments' => array('administer travel content'),
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  // URI for deleting entity instances.
+  $items[$base_uri . '/delete'] = array(
+    'title' => 'Delete Typical Entity 4',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('travel_form_delete', $base_uri_argument_position),
+    'access arguments' => array('administer travel content'),
+    //'file' => 'travel.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Form constructor for the entity add form.
+ */
+function travel_add() {
+  drupal_set_title(t('Create new travel form'));
+
+  $entity = entity_create('travel', array());
+  return drupal_get_form('travel_add_form', $entity);
+}
+
+/**
+ * Form constructor for the travel form.
+ * 
+ * In this form we shall manually define all form elements related to editable
+ * properties of the entity.
+ * 
+ * @param object $entity
+ * 
+ * @return array
+ *   Entity edit form.
+ */
+function travel_add_form($form, &$form_state, $entity) {
+  // Store the entity in the form.
+  $form_state['travel'] = $entity;
+
+  // Describe all properties of the entity which shall be shown on the form.
+  $wrapper = entity_metadata_wrapper('travel', $entity);
+
+  $form['transport'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Transport:'),
+    '#default_value' => $wrapper->transport->value(),
+    '#weight' => -20,
+  );
+
+  $form['source_from'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Source From:'),
+    '#default_value' => $wrapper->source_from->value(),
+    '#weight' => -16,
+  );
+  $form['destination_to'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Destination To:'),
+    '#default_value' => $wrapper->destination_to->value(),
+    '#weight' => -10,
+  );
+
+  // Add some buttons.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => 5,
+    '#submit' => array('travel_form_submit'),
+  );
+  if (empty($entity->is_new)) {
+    $form['actions']['delete'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete'),
+      '#weight' => 15,
+      '#submit' => array('travel_form_submit_delete'),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Entity edit form "Save" submit handler.
+ */
+function travel_form_submit(&$form, &$form_state) {
+  $entity = $form_state['travel'];  //Get the entity inputs from the from state.
+  
+  entity_form_submit_build_entity('travel', $entity, $form, $form_state);  //Binds the form state values to the entity properties.
+  $wrapper = entity_metadata_wrapper('travel', $entity);
+  $wrapper->save();
+
+  // Redirect user to edited entity page.
+  $entity_uri = entity_uri('travel', $entity);
+  $form_state['redirect'] = $entity_uri['path'];
+}
+
+/**
+ * Entity edit form "Delete" submit handler.
+ */
+function travel_form_submit_delete($form, &$form_state) {
+  // Redirect user to "Delete" URI for this entity.
+  $entity = $form_state['travel'];
+  $entity_uri = entity_uri('travel', $entity);
+  $form_state['redirect'] = $entity_uri['path'] . '/delete';
+}
+
+/**
+ * Form constructor for the entity delete confirmation form.
+ * 
+ * @param object $entity
+ *   Entity to delete.
+ * 
+ * @return array
+ *   Confirmation form.
+ */
+function travel_form_delete($form, &$form_state, $entity) {
+  // Store the entity in the form.
+  $form_state['travel'] = $entity;
+
+  // Show confirm dialog.
+  $entity_uri = entity_uri('travel', $entity);
+  $message = t('Are you sure you want to delete travel %title?', array('%title' => entity_label('travel', $entity)));
+  return confirm_form(
+    $form,
+    $message,
+    $entity_uri['path'],
+    t('This action cannot be undone.'),
+    t('Delete'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Entity "Confirm delete" form submit handler.
+ */
+function travel_form_delete_submit($form, &$form_state) {
+  // Delete the entity.
+  $entity = $form_state['travel'];
+  $wrapper = entity_metadata_wrapper('travel', $entity);
+  $wrapper->delete();
+
+  // Redirect user.
+  drupal_set_message(t('Custom entity v4 %title deleted.', array('%title' => entity_label('travel', $entity))));
+  //$form_state['redirect'] = '<front>';
+  $form_state['redirect'] = '/travel';
+}

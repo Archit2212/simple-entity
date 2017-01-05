@@ -1,0 +1,5 @@
+name = Travel
+description = Travel user interface.
+package = Custom Entities
+core = 7.x
+files[] = travel.controller.inc
